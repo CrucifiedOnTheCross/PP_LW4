@@ -38,7 +38,8 @@ public abstract class AbstractTabulatedFunction implements TabulatedFunction {
             if (index != -1) {
                 return getY(index);
             } else {
-                return interpolate(x, floorIndexOfX(x));
+                int floor = floorIndexOfX(x);
+                return interpolate(x, floor);
             }
         }
     }
@@ -48,8 +49,19 @@ public abstract class AbstractTabulatedFunction implements TabulatedFunction {
 
     protected abstract double extrapolateRight(double x);
 
-    protected abstract double interpolate(double x, double y);
+    protected abstract int floorIndexOfX(double x);
 
-    protected abstract double floorIndexOfX(double x);
+    protected double interpolate(double x, int floorIndex) {
+        double x0 = getX(floorIndex);
+        double x1 = getX(floorIndex + 1);
+        double y0 = getY(floorIndex);
+        double y1 = getY(floorIndex + 1);
+        return interpolate(x, x0, x1, y0, y1);
+    }
+
+    protected double interpolate(double x, double leftX, double rightX, double leftY, double rightY) {
+        double slope = (rightY - leftY) / (rightX - leftX);
+        return leftY + (x - leftX) * slope;
+    }
 
 }

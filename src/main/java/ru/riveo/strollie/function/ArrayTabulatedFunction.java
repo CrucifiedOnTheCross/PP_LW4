@@ -1,13 +1,12 @@
 package ru.riveo.strollie.function;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction {
 
     private final double EPS = 1e-6;
-    private double[] xValues;
-    private double[] yValues;
+    private final double[] xValues;
+    private final double[] yValues;
 
     public ArrayTabulatedFunction(double[] xValues, double[] yValues) {
         Objects.requireNonNull(xValues, "xValues must not be null");
@@ -28,7 +27,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction {
 
     public ArrayTabulatedFunction(MathFunction func, double from, double to, int count) {
         Objects.requireNonNull(func, "func must not be null");
-        if (this.count < 2) {
+        if (count < 2) {
             throw new IllegalArgumentException("Arrays must have at least 2 elements");
         }
 
@@ -41,77 +40,122 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction {
         super.count = count;
         this.xValues = new double[count];
         this.yValues = new double[count];
-
-        if (Math.abs(from - to) > EPS) {
-            double value = func.apply(from);
-            Arrays.fill(xValues, from);
-            Arrays.fill(yValues, to);
-        } else {
-            double step = (to - from) / (count - 1);
-            for (int i = 0; i < count; i++) {
-                xValues[i] = from;
-                yValues[i] = 
-            }
+        double step = (to - from) / (count - 1);
+        double current = from;
+        for (int i = 0; i < count; i++) {
+            xValues[i] = current;
+            yValues[i] = func.apply(current);
+            current += step;
         }
     }
 
     @Override
     protected double extrapolateLeft(double x) {
-        return 0;
+        double x0 = xValues[0];
+        double y0 = yValues[0];
+        double x1 = xValues[1];
+        double y1 = yValues[1];
+        double slope = (y1 - y0) / (x1 - x0);
+        return y0 + (x - x0) * slope;
     }
 
     @Override
     protected double extrapolateRight(double x) {
-        return 0;
+        int n = this.count;
+        double x0 = xValues[n - 2];
+        double y0 = yValues[n - 2];
+        double x1 = xValues[n - 1];
+        double y1 = yValues[n - 1];
+        double slope = (y1 - y0) / (x1 - x0);
+        return y1 + (x - x1) * slope;
     }
 
     @Override
-    protected double interpolate(double x, double y) {
-        return 0;
-    }
-
-    @Override
-    protected double floorIndexOfX(double x) {
-        return 0;
+    protected int floorIndexOfX(double x) {
+        int n = count;
+        if (x < xValues[0]) {
+            return -1;
+        }
+        if (x > xValues[n - 1]) {
+            return n - 1;
+        }
+        int l = 0;
+        int r = n - 1;
+        while (l <= r) {
+            int m = l + (r - l) / 2;
+            if (xValues[m] <= x) {
+                l = m + 1;
+            } else {
+                r = m - 1;
+            }
+        }
+        return r;
     }
 
     @Override
     public int getCount() {
-        return 0;
+        return this.count;
     }
 
     @Override
     public double getX(int index) {
-        return 0;
+        if (index < 0 || index >= this.count) {
+            throw new IndexOutOfBoundsException("Index out of bounds: " + index);
+        }
+        return xValues[index];
     }
 
     @Override
     public double getY(int index) {
-        return 0;
+        if (index < 0 || index >= this.count) {
+            throw new IndexOutOfBoundsException("Index out of bounds: " + index);
+        }
+        return yValues[index];
     }
 
     @Override
     public void setY(int index, double value) {
-
+        if (index < 0 || index >= this.count) {
+            throw new IndexOutOfBoundsException("Index out of bounds: " + index);
+        }
+        yValues[index] = value;
     }
 
     @Override
     public int indexOfX(double x) {
-        return 0;
+        int l = 0;
+        int r = count - 1;
+        while (l <= r) {
+            int m = l + (r - l) / 2;
+            double xm = xValues[m];
+            if (xm == x) {
+                return m;
+            } else if (xm < x) {
+                l = m + 1;
+            } else {
+                r = m - 1;
+            }
+        }
+        return -1;
     }
 
     @Override
     public int indexOfY(double y) {
-        return 0;
+        for (int i = 0; i < count; i++) {
+            if (yValues[i] == y) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     @Override
     public double leftBound() {
-        return 0;
+        return xValues[0];
     }
 
     @Override
     public double rightBound() {
-        return 0;
+        return xValues[count - 1];
     }
 }
